@@ -8,7 +8,6 @@ jobs:
     uses: trayhem-projects/ci-templates/.github/workflows/pick-runner.yml@main
     with:
       org: trayhem-projects
-    secrets: inherit
 
   run-on-picked:
     needs: pick-runner
@@ -17,4 +16,3 @@ jobs:
       - run: |
           echo "picked labels: ${{ needs.pick-runner.outputs.labels_json }}"
           hostname
-          uname -a
