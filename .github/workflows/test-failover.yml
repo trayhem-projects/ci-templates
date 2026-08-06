@@ -1,0 +1,20 @@
+name: Test Runner Failover
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pick-runner:
+    uses: trayhem-projects/ci-templates/.github/workflows/pick-runner.yml@main
+    with:
+      org: trayhem-projects
+    secrets: inherit
+
+  run-on-picked:
+    needs: pick-runner
+    runs-on: ${{ fromJSON(needs.pick-runner.outputs.labels_json) }}
+    steps:
+      - run: |
+          echo "picked labels: ${{ needs.pick-runner.outputs.labels_json }}"
+          hostname
+          uname -a
