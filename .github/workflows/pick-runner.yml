@@ -6,6 +6,9 @@ on:
       org:
         required: true
         type: string
+    secrets:
+      RUNNER_STATUS_TOKEN:
+        required: true
     outputs:
       labels_json:
         description: "JSON array for runs-on, e.g. [\"self-hosted\",\"primary\"]"
