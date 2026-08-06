@@ -1,0 +1,36 @@
+name: Pick Runner
+
+on:
+  workflow_call:
+    inputs:
+      org:
+        required: true
+        type: string
+    outputs:
+      labels_json:
+        description: "JSON array for runs-on, e.g. [\"self-hosted\",\"primary\"]"
+        value: ${{ jobs.pick.outputs.labels_json }}
+
+jobs:
+  pick:
+    runs-on: ubuntu-latest
+    outputs:
+      labels_json: ${{ steps.check.outputs.labels_json }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+          ORG: ${{ inputs.org }}
+        run: |
+          STATUS=$(curl -s -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/orgs/$ORG/actions/runners" \
+            | jq -r '[.runners[] | select(.labels[].name=="primary")][0].status // "offline"')
+
+          if [ "$STATUS" = "online" ]; then
+            LABEL=primary
+          else
+            LABEL=fallback
+          fi
+
+          echo "picked $LABEL (primary runner status: $STATUS)"
+          echo "labels_json=[\"self-hosted\",\"$LABEL\"]" >> "$GITHUB_OUTPUT"
