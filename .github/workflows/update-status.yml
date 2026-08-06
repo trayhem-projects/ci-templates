@@ -1,0 +1,36 @@
+name: Update Runner Status
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
+          ORG: trayhem-projects
+        run: |
+          STATUS=$(curl -s -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/orgs/$ORG/actions/runners" \
+            | jq -r '[.runners[] | select(.labels[].name=="primary")][0].status // "offline"')
+
+          if [ "$STATUS" = "online" ]; then LABEL=primary; else LABEL=fallback; fi
+
+          mkdir -p status
+          cat > status/$ORG.json <<JSON
+          {"primary_status": "$STATUS", "label": "$LABEL", "updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"}
+          JSON
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add status/$ORG.json
+          git diff --staged --quiet && exit 0
+          git commit -m "chore: update runner status [skip ci]"
+          git push
