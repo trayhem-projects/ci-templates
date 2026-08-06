@@ -6,9 +6,6 @@ on:
       org:
         required: true
         type: string
-    secrets:
-      RUNNER_STATUS_TOKEN:
-        required: true
     outputs:
       labels_json:
         description: "JSON array for runs-on, e.g. [\"self-hosted\",\"primary\"]"
@@ -22,18 +19,8 @@ jobs:
     steps:
       - id: check
         env:
-          TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
           ORG: ${{ inputs.org }}
         run: |
-          STATUS=$(curl -s -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/orgs/$ORG/actions/runners" \
-            | jq -r '[.runners[] | select(.labels[].name=="primary")][0].status // "offline"')
-
-          if [ "$STATUS" = "online" ]; then
-            LABEL=primary
-          else
-            LABEL=fallback
-          fi
-
-          echo "picked $LABEL (primary runner status: $STATUS)"
+          LABEL=$(curl -s "https://raw.githubusercontent.com/$ORG/ci-templates/main/status/$ORG.json" | jq -r '.label // "fallback"')
+          echo "picked $LABEL"
           echo "labels_json=[\"self-hosted\",\"$LABEL\"]" >> "$GITHUB_OUTPUT"
